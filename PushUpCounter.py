@@ -12,7 +12,6 @@ form = 0
 feedback = "Fix Form"
 
 mirror = True
-is_playing = False
 # 1번 ~ 10번 갯수를 말했는지 True False
 spoken_numbers = [False] * 9
 
@@ -30,17 +29,16 @@ cv2.namedWindow(window_name, cv2.WND_PROP_FULLSCREEN)
 pygame.mixer.init()
 
 def speak(text: str): # tts mp3 파일 재생
-    global is_playing # is_playing을 전역 변수로 선언
-
-    if is_playing:
+    if pygame.mixer.music.get_busy():
         return
-    
-    is_playing = True
+
+    if text.isnumeric():
+        pygame.mixer.music.set_volume(100)
+    else:
+        pygame.mixer.music.set_volume(75)
 
     pygame.mixer.music.load(f'voice/{text.lower()}.mp3')
     pygame.mixer.music.play()
-
-    is_playing = False
 
 while cap.isOpened():
     ret, img = cap.read() #640 x 480
@@ -92,7 +90,8 @@ while cap.isOpened():
         #Check for full range of motion for the pushup
         if form == 1:
             if per == 0:
-                if elbow <= 90 and hip > 160:
+                #if elbow <= 90 and hip > 160:
+                if elbow <= 80 and hip > 150:
                     feedback = "Up"
                     if direction == 0:
                         count += 0.5
@@ -101,14 +100,17 @@ while cap.isOpened():
                         # 추가한 코드
                         if 1 <= count <= 10 and str(count)[-1] == '0': # count가 1 이상 10 이하이고, 소수점의 마지막이 0이면
                             index = int(count) - 1
-                            if spoken_numbers[index] == False:
+                            if not spoken_numbers[index]:
+                                if pygame.mixer.music.get_busy():
+                                    pygame.mixer.music.stop()
                                 speak(str(int(count)))
                                 spoken_numbers[index] = True
                 else:
                     feedback = "Fix Form"
                     
             if per == 100:
-                if elbow > 160 and shoulder > 40 and hip > 160:
+                #if elbow > 160 and shoulder > 40 and hip > 160:
+                if elbow > 150 and shoulder > 40 and hip > 150:
                     feedback = "Down"
                     if direction == 1:
                         count += 0.5
@@ -117,7 +119,9 @@ while cap.isOpened():
                         # 추가한 코드
                         if 1 <= count <= 10 and str(count)[-1] == '0': # count가 1 이상 10 이하이고, 소수점의 마지막이 0이면
                             index = int(count) - 1
-                            if spoken_numbers[index] == False:
+                            if not spoken_numbers[index]:
+                                if pygame.mixer.music.get_busy():
+                                    pygame.mixer.music.stop()
                                 speak(str(int(count)))
                                 spoken_numbers[index] = True
                 else:
@@ -129,8 +133,7 @@ while cap.isOpened():
         
 
         #Draw Bar
-        #if form == 1:
-        if 1 == 1:
+        if form == 1:
             cv2.rectangle(img, (580, 50), (600, 380), (0, 255, 0), 3)
             cv2.rectangle(img, (580, int(bar)), (600, 380), (0, 255, 0), cv2.FILLED)
             cv2.putText(img, f'{int(per)}%', (565, 430), cv2.FONT_HERSHEY_PLAIN, 2,
